@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.huawei.ibooking.mapper.AdminRbacMapper">
+    <resultMap id="adminUser" type="com.huawei.ibooking.model.AdminUserDO">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="passwordHash" column="password_hash"/>
+        <result property="displayName" column="display_name"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <resultMap id="adminUserRoleRow" type="com.huawei.ibooking.model.AdminUserRoleRowDO">
+        <id property="userId" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="displayName" column="display_name"/>
+        <result property="status" column="status"/>
+        <result property="roleCode" column="role_code"/>
+    </resultMap>
+
+    <resultMap id="role" type="com.huawei.ibooking.model.RoleDO">
+        <id property="id" column="id"/>
+        <result property="roleCode" column="role_code"/>
+        <result property="roleName" column="role_name"/>
+        <result property="roleDesc" column="role_desc"/>
+    </resultMap>
+
+    <resultMap id="permission" type="com.huawei.ibooking.model.PermissionDO">
+        <id property="id" column="id"/>
+        <result property="permCode" column="perm_code"/>
+        <result property="permName" column="perm_name"/>
+        <result property="permDesc" column="perm_desc"/>
+    </resultMap>
+
+    <select id="getAdminUserByUsername" resultMap="adminUser">
+        select id, username, password_hash, display_name, status
+        from tbl_admin_user
+        where username = #{username}
+    </select>
+
+    <select id="getAdminUserById" resultMap="adminUser">
+        select id, username, password_hash, display_name, status
+        from tbl_admin_user
+        where id = #{userId}
+    </select>
+
+    <select id="getRoleCodesByUserId" resultType="java.lang.String">
+        select r.role_code
+        from tbl_admin_user_role ur
+                 join tbl_role r on ur.role_id = r.id
+        where ur.admin_user_id = #{userId}
+    </select>
+
+    <select id="getPermissionCodesByUserId" resultType="java.lang.String">
+        select distinct p.perm_code
+        from tbl_admin_user_role ur
+                 join tbl_role_permission rp on ur.role_id = rp.role_id
+                 join tbl_permission p on rp.permission_id = p.id
+        where ur.admin_user_id = #{userId}
+    </select>
+
+    <select id="getPermissionsByUserId" resultMap="permission">
+        select distinct p.id, p.perm_code, p.perm_name, p.perm_desc
+        from tbl_admin_user_role ur
+                 join tbl_role_permission rp on ur.role_id = rp.role_id
+                 join tbl_permission p on rp.permission_id = p.id
+        where ur.admin_user_id = #{userId}
+    </select>
+
+    <select id="listAdminUserRoleRows" resultMap="adminUserRoleRow">
+        select u.id as user_id, u.username, u.display_name, u.status, r.role_code
+        from tbl_admin_user u
+                 left join tbl_admin_user_role ur on u.id = ur.admin_user_id
+                 left join tbl_role r on ur.role_id = r.id
+        order by u.id
+    </select>
+
+    <select id="getRolesByCodes" resultMap="role">
+        select id, role_code, role_name, role_desc
+        from tbl_role
+        where role_code in
+        <foreach collection="roleCodes" item="roleCode" open="(" separator="," close=")">
+            #{roleCode}
+        </foreach>
+    </select>
+
+    <delete id="deleteRolesByUserId">
+        delete from tbl_admin_user_role where admin_user_id = #{userId}
+    </delete>
+
+    <insert id="insertUserRole">
+        insert into tbl_admin_user_role (admin_user_id, role_id)
+        values (#{userId}, #{roleId})
+    </insert>
+
+    <update id="updatePasswordHash">
+        update tbl_admin_user
+        set password_hash = #{passwordHash}
+        where id = #{userId}
+    </update>
+
+    <select id="listRoles" resultMap="role">
+        select id, role_code, role_name, role_desc
+        from tbl_role
+        order by id
+    </select>
+
+    <select id="listPermissions" resultMap="permission">
+        select id, perm_code, perm_name, perm_desc
+        from tbl_permission
+        order by id
+    </select>
+
+    <insert id="insertAdminUser" useGeneratedKeys="true" keyProperty="id">
+        insert into tbl_admin_user (username, password_hash, display_name, status)
+        values (#{username}, #{passwordHash}, #{displayName}, #{status})
+    </insert>
+</mapper>
