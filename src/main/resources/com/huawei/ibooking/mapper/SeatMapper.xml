@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.huawei.ibooking.mapper.SeatMapper">
+    <resultMap id="seat" type="com.huawei.ibooking.model.SeatDO"/>
+
+    <select id="getSeats" resultMap="seat">
+        select s.id,
+               s.seatNumber,
+               s.studyRoomId,
+               concat(r.buildingNum, '-', r.classRoomNum) as studyRoom,
+               r.buildingNum as buildingNumber,
+               r.classRoomNum as classRoomNumber,
+               s.status,
+               s.reservedBy,
+               s.reservationTime,
+               s.checkinTime,
+               s.createdAt,
+               s.hasPowerSocket,
+               s.hasMobileTrackSocket,
+             s.isNearWindow as nearWindow
+        from tbl_seat s
+                 join tbl_study_room r on s.studyRoomId = r.id
+        order by r.id, s.id
+    </select>
+
+    <select id="getSeatById" resultMap="seat">
+        select s.id,
+               s.seatNumber,
+               s.studyRoomId,
+               concat(r.buildingNum, '-', r.classRoomNum) as studyRoom,
+               r.buildingNum as buildingNumber,
+               r.classRoomNum as classRoomNumber,
+               s.status,
+               s.reservedBy,
+               s.reservationTime,
+               s.checkinTime,
+               s.createdAt,
+               s.hasPowerSocket,
+               s.hasMobileTrackSocket,
+             s.isNearWindow as nearWindow
+        from tbl_seat s
+                 join tbl_study_room r on s.studyRoomId = r.id
+        where s.id = #{id}
+    </select>
+
+    <update id="cancelReservation">
+        update tbl_seat
+        set status = 'available',
+            reservedBy = null,
+            reservationTime = null,
+            checkinTime = null
+        where id = #{id}
+          and status = 'reserved'
+    </update>
+
+    <update id="checkinSeat">
+        update tbl_seat
+        set status = 'occupied',
+            checkinTime = #{updatedAt}
+        where id = #{id}
+          and status in ('reserved', 'occupied')
+    </update>
+</mapper>

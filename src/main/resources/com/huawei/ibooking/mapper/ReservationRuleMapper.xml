@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.huawei.ibooking.mapper.ReservationRuleMapper">
+    <resultMap id="rules" type="com.huawei.ibooking.model.ReservationRuleDO"/>
+
+    <select id="getRules" resultMap="rules">
+        select id,
+               maxReservationHours,
+               minAdvanceMinutes,
+               openingTime,
+               closingTime,
+               preReservationReminderMinutes,
+               postReservationReminderMinutes,
+               autoCancelMinutes,
+               reminderEmail,
+               reminderWeChat,
+               reminderSMS,
+               checkinCodeWeb,
+               checkinQRCode,
+               checkinCodeRefreshMinutes,
+               violationRecordEnabled,
+               violationPolicy,
+               violationThreshold
+        from tbl_reservation_rules
+        order by id desc
+        limit 1
+    </select>
+
+    <insert id="saveRules" parameterType="com.huawei.ibooking.model.ReservationRuleDO">
+        merge into tbl_reservation_rules key (id)
+        values (
+            #{rules.id},
+            #{rules.maxReservationHours},
+            #{rules.minAdvanceMinutes},
+            #{rules.openingTime},
+            #{rules.closingTime},
+            #{rules.preReservationReminderMinutes},
+            #{rules.postReservationReminderMinutes},
+            #{rules.autoCancelMinutes},
+            #{rules.reminderEmail},
+            #{rules.reminderWeChat},
+            #{rules.reminderSMS},
+            #{rules.checkinCodeWeb},
+            #{rules.checkinQRCode},
+            #{rules.checkinCodeRefreshMinutes},
+            #{rules.violationRecordEnabled},
+            #{rules.violationPolicy},
+            #{rules.violationThreshold}
+        )
+    </insert>
+</mapper>
