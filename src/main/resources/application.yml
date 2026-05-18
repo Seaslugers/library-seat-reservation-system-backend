@@ -1,10 +1,5 @@
 server:
   port: 8090
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
 
 spring:
   mvc:
@@ -22,7 +17,6 @@ spring:
 
   sql:
     init:
-      encoding: UTF-8
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
       mode: always

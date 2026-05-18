@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>自习室预订</title>
+    <title>Study Room Booking Admin</title>
     <meta charset="UTF-8">
     <link href="../easyui/themes/bootstrap/easyui.css" rel="stylesheet" type="text/css">
     <link href="../easyui/themes/icon.css" rel="stylesheet" type="text/css">
@@ -13,28 +13,182 @@
         body {
             font-family: microsoft yahei;
         }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            padding: 0 12px;
+        }
+
+        #emptyTip {
+            display: none;
+            padding: 24px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-<h1>自习室预订系统</h1>
+<h1>Study Room Booking System</h1>
 <div class="easyui-layout" style="width:100%;height:640px;">
-    <div data-options="region:'north'" style="height:50px"></div>
-    <div data-options="region:'south',split:true" style="height:50px;"></div>
-    <div data-options="region:'west',split:true" style="width:200px;" title="导航栏">
+    <div data-options="region:'north'" style="height:50px">
+        <div class="topbar">
+            <span id="welcomeText">Please login</span>
+            <a id="logoutBtn" class="easyui-linkbutton" href="javascript:void(0)" style="display:none;">Logout</a>
+        </div>
+    </div>
+    <div data-options="region:'south',split:true" style="height:50px;padding:12px;">
+        RBAC Demo: Session + Permission-based visibility
+    </div>
+    <div data-options="region:'west',split:true" style="width:220px;" title="Navigation">
         <div class="easyui-accordion" data-options="fit:true,border:false">
-            <div style="padding:10px;" title="系统管理">
-                <a href="/views/student.html">学生管理</a>
+            <div style="padding:10px;" title="Admin">
+                <a id="menuStudent" data-perm="PERM_USER_ROLE_ASSIGN" href="/views/student.html">User Management</a>
                 <p></p>
-                <a href="/views/studyroom.html">自习室管理</a>
+                <a id="menuStudyRoom" data-perm="PERM_STUDYROOM_MANAGE" href="/views/studyroom.html">Study Room Management</a>
             </div>
         </div>
     </div>
-    <div data-options="region:'center',title:'系统管理',iconCls:'icon-ok'">
-        <div class="easyui-tabs" data-options="fit:true,border:false,plain:true">
-            <div data-options="href:'/views/student.html'" style="padding:10px" title="学生管理"></div>
-            <div data-options="href:'/views/studyroom.html'" style="padding:10px" title="自习室管理"></div>
+    <div data-options="region:'center',title:'Management',iconCls:'icon-ok'">
+        <div id="mainTabs" class="easyui-tabs" data-options="fit:true,border:false,plain:true">
+            <div data-options="href:'/views/student.html',permCode:'PERM_USER_ROLE_ASSIGN'" style="padding:10px" title="User Management"></div>
+            <div data-options="href:'/views/studyroom.html',permCode:'PERM_STUDYROOM_MANAGE'" style="padding:10px" title="Study Room Management"></div>
         </div>
+        <div id="emptyTip">No modules are authorized for your current role.</div>
     </div>
 </div>
+
+<div id="loginDlg" class="easyui-dialog" title="Admin Login" style="width:360px;padding:16px"
+     data-options="closed:true,modal:true,closable:false,resizable:false">
+    <div style="margin-bottom:10px">
+        <input id="usernameInput" class="easyui-textbox" label="Username:" style="width:100%" value="admin">
+    </div>
+    <div style="margin-bottom:16px">
+        <input id="passwordInput" class="easyui-passwordbox" label="Password:" style="width:100%" value="test123">
+    </div>
+    <a id="loginBtn" class="easyui-linkbutton c6" href="javascript:void(0)" style="width:100%">Login</a>
+</div>
+
+<script type="text/javascript">
+    var authState = {
+        user: null,
+        permissionCodes: []
+    };
+
+    $(function () {
+        $('#logoutBtn').on('click', logout);
+        $('#loginBtn').on('click', login);
+        initAuth();
+    });
+
+    function initAuth() {
+        $.ajax({
+            url: '/admin/auth/me',
+            method: 'GET',
+            dataType: 'json',
+            statusCode: {
+                200: function (data) {
+                    setAuthState(data);
+                },
+                401: function () {
+                    openLoginDialog();
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status !== 401) {
+                    $.messager.alert('Error', 'Failed to initialize admin session.');
+                }
+            }
+        });
+    }
+
+    function login() {
+        var payload = {
+            username: $('#usernameInput').textbox('getValue'),
+            password: $('#passwordInput').passwordbox('getValue')
+        };
+
+        $.ajax({
+            url: '/admin/auth/login',
+            method: 'POST',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify(payload),
+            statusCode: {
+                200: function (data) {
+                    setAuthState(data);
+                    $('#loginDlg').dialog('close');
+                },
+                401: function () {
+                    $.messager.alert('Login Failed', 'Invalid username or password.');
+                }
+            },
+            error: function (xhr) {
+                if (xhr.status !== 401) {
+                    $.messager.alert('Error', 'Login request failed.');
+                }
+            }
+        });
+    }
+
+    function logout() {
+        $.ajax({
+            url: '/admin/auth/logout',
+            method: 'POST',
+            complete: function () {
+                window.location.reload();
+            }
+        });
+    }
+
+    function setAuthState(data) {
+        authState.user = data || {};
+        authState.permissionCodes = (data && data.permissionCodes) ? data.permissionCodes : [];
+
+        $('#welcomeText').text('Welcome, ' + (authState.user.displayName || authState.user.username || 'Admin'));
+        $('#logoutBtn').show();
+
+        applyMenuPermission();
+        applyTabPermission();
+    }
+
+    function openLoginDialog() {
+        $('#welcomeText').text('Please login');
+        $('#logoutBtn').hide();
+        $('#loginDlg').dialog('open').dialog('center');
+    }
+
+    function hasPermission(permissionCode) {
+        return $.inArray(permissionCode, authState.permissionCodes) >= 0;
+    }
+
+    function applyMenuPermission() {
+        $('[data-perm]').each(function () {
+            var need = $(this).attr('data-perm');
+            $(this).toggle(hasPermission(need));
+        });
+    }
+
+    function applyTabPermission() {
+        var tabs = $('#mainTabs');
+        var tabPanels = tabs.tabs('tabs');
+
+        for (var i = tabPanels.length - 1; i >= 0; i--) {
+            var panel = tabPanels[i];
+            var need = panel.panel('options').permCode;
+            if (need && !hasPermission(need)) {
+                var index = tabs.tabs('getTabIndex', panel);
+                tabs.tabs('close', index);
+            }
+        }
+
+        if (tabs.tabs('tabs').length === 0) {
+            $('#emptyTip').show();
+        } else {
+            $('#emptyTip').hide();
+        }
+    }
+</script>
 </body>
 </html>

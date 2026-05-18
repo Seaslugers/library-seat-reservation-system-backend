@@ -9,30 +9,7 @@ create table tbl_student
     unique (stuNum)
 );
 
-drop table if exists tbl_reservation_rules;
-create table tbl_reservation_rules
-(
-    id                            int not null auto_increment,
-    maxReservationHours           int not null,
-    minAdvanceMinutes             int not null,
-    openingTime                   varchar(8) not null,
-    closingTime                   varchar(8) not null,
-    preReservationReminderMinutes  int not null,
-    postReservationReminderMinutes int not null,
-    autoCancelMinutes             int not null,
-    reminderEmail                 boolean not null,
-    reminderWeChat                boolean not null,
-    reminderSMS                   boolean not null,
-    checkinCodeWeb                boolean not null,
-    checkinQRCode                 boolean not null,
-    checkinCodeRefreshMinutes     int not null,
-    violationRecordEnabled        boolean not null,
-    violationPolicy               varchar(16) not null,
-    violationThreshold            int not null,
-    primary key (id)
-);
-
-drop table if exists tbl_study_room;
+drop table if exists tbl_studyroom;
 create table tbl_study_room
 (
     id           int         not null auto_increment,
@@ -44,17 +21,72 @@ create table tbl_study_room
 drop table if exists tbl_seat;
 create table tbl_seat
 (
-    id                   int not null auto_increment,
-    studyRoomId          int not null,
-    seatNumber           varchar(16) not null,
-    status               varchar(16) not null,
-    reservedBy           varchar(32),
-    reservationTime      timestamp,
-    checkinTime          timestamp,
-    createdAt            timestamp default current_timestamp,
-    hasPowerSocket       boolean not null default false,
-    hasMobileTrackSocket boolean not null default false,
-    isNearWindow         boolean not null default false,
+    id          int not null auto_increment,
+    studyRoomId int not null,
+    primary key (id, studyRoomId)
+);
+
+drop table if exists tbl_booking_xxx;
+create table tbl_booking_xxx
+(
+    id            int not null auto_increment,
+    seatId        int not null,
+    bookingPeriod int not null,
+    stuId         int not null,
+    primary key (id)
+);
+
+drop table if exists tbl_admin_user_role;
+drop table if exists tbl_role_permission;
+drop table if exists tbl_admin_user;
+drop table if exists tbl_role;
+drop table if exists tbl_permission;
+
+create table tbl_admin_user
+(
+    id            int          not null auto_increment,
+    username      varchar(32)  not null,
+    password_hash varchar(128) not null,
+    display_name  varchar(32)  not null,
+    status        tinyint      not null default 1,
     primary key (id),
-    constraint fk_seat_study_room foreign key (studyRoomId) references tbl_study_room (id)
+    unique (username)
+);
+
+create table tbl_role
+(
+    id        int         not null auto_increment,
+    role_code varchar(64) not null,
+    role_name varchar(64) not null,
+    role_desc varchar(255),
+    primary key (id),
+    unique (role_code)
+);
+
+create table tbl_permission
+(
+    id        int         not null auto_increment,
+    perm_code varchar(64) not null,
+    perm_name varchar(64) not null,
+    perm_desc varchar(255),
+    primary key (id),
+    unique (perm_code)
+);
+
+create table tbl_admin_user_role
+(
+    id            int not null auto_increment,
+    admin_user_id int not null,
+    role_id       int not null,
+    primary key (id),
+    unique (admin_user_id, role_id)
+);
+
+create table tbl_role_permission
+(
+    id            int not null auto_increment,
+    role_id       int not null,
+    permission_id int not null,
+    primary key (id),
+    unique (role_id, permission_id)
 );
